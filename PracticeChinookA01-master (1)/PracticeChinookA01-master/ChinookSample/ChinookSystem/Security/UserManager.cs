@@ -9,6 +9,7 @@ using Microsoft.AspNet.Identity.EntityFramework;    //UserStore
 using Microsoft.AspNet.Identity;                    //UserManager
 using System.ComponentModel;                        //ODS
 using ChinookSystem.DAL;                            //context class
+using ChinookSystem.Data.Entities;                  //Entity classes
 #endregion
 namespace ChinookSystem.Security
 {
@@ -122,6 +123,7 @@ namespace ChinookSystem.Security
             this.Create(newuseraccount, STR_DEFAULT_PASSWORD);
 
             //assign user to an appropriate role
+            //uses the guid like userid from the users table
             switch (userinfo.UserType)
             {
                 case UnRegisteredUserType.Customer:
@@ -138,6 +140,44 @@ namespace ChinookSystem.Security
 
         }//eom
 
+        //List all current users
+        [DataObjectMethod(DataObjectMethodType.Select,false)]
+        public List<UserProfile> ListAllUsers()
+        {
+            //We will be using the role manager to get roles
+            var rm = new RoleManager();
+
+            //Get the current users off the UserSecurity tabel
+            var results = from person in Users.ToList() select new UserProfile() { UserId = person.Id, UserName = person.UserName, Email = person.Email, EmailConfirmed = person.EmailConfirmed, CustomerId = person.CustomerId, EmployeeId = person.EmployeeId, RoleMemberships = person.Roles.Select(r => rm.FindById(r.RoleId).Name) };
+
+            //Using our own datatables gather the user first name and last name
+            using (var context = new ChinookContext())
+            {
+                Employee etemp;
+                Customer ctemp;
+                foreach (var person in results)
+                {
+                    if (person.EmployeeId.HasValue)
+                    {
+                        etemp = context.Employees.Find(person.EmployeeId);
+                        person.FirstName = etemp.FirstName;
+                        person.LastName = etemp.LastName;
+                    }
+                    else if (person.CustomerId.HasValue)
+                    {
+                        ctemp = context.Customers.Find(person.CustomerId);
+                        person.FirstName = ctemp.FirstName;
+                        person.LastName = ctemp.LastName;
+                    }
+                    else
+                    {
+                        person.FirstName = "Unknown";
+                        person.LastName = "";
+                    }
+                }
+            }
+            return results.ToList();
+        }
         //add a user to the User Table (ListView)
 
         //delete a user from the user Table (ListView)

@@ -73,4 +73,29 @@ public partial class Admin_Security_Default : System.Web.UI.Page
             DataBind();
         }
     }
+
+    protected void UserListView_ItemInserting(object sender, ListViewInsertEventArgs e)
+    {
+        //one needs to walk through the checkBoxList
+
+        //Create the role membership string List<> of selected rows
+        var addtoroles = new List<string>();
+
+        //Point to the physical checkboxlist conrtol
+        var roles = e.Item.FindControl("RoleMemberships") as CheckBoxList;
+
+        //Does the control exist?  --Safety Check
+        if (roles != null)
+        {
+            //cycle through the check box list, find which roles have been selected (checked), ad to the List<string>, assign the List<string> to the inserting instance represented by e
+            foreach(ListItem role in roles.Items)
+            {
+                if (role.Selected)
+                {
+                    addtoroles.Add(role.Value);
+                }
+                e.Values["RoleMemershipd"] = addtoroles;
+            }
+        }
+    }
 }

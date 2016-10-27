@@ -178,8 +178,46 @@ namespace ChinookSystem.Security
             }
             return results.ToList();
         }
+
         //add a user to the User Table (ListView)
+        [DataObjectMethod(DataObjectMethodType.Insert,true)]
+        public void AddUser(UserProfile userinfo)
+        {
+            //Create in instance representing the new user
+            var useraccount = new ApplicationUser()
+            {
+                UserName = userinfo.UserName,
+                Email = userinfo.Email
+            };
+
+            //Create the new user on the physical users table
+            this.Create(useraccount, STR_DEFAULT_PASSWORD);
+
+            //Create the UserRoles which were choosen at insert time
+            foreach (var rolename in userinfo.RoleMemberships)
+            {
+                this.AddToRole(useraccount.Id, rolename);
+            }
+        }
 
         //delete a user from the user Table (ListView)
+        [DataObjectMethod(DataObjectMethodType.Delete,true)]
+        public void RemoveUser(UserProfile userinfo)
+        {
+            //Business rule
+            //The web master cannot be deleted
+
+            //Realize that the only info you have at this time is the data key names value which is the userId (on the user security table the field is Id)
+
+            //Obtain the username from the security user table using the User Id value
+            string username = this.Users.Where(u => u.Id == userinfo.UserId).Select(u => u.UserName).SingleOrDefault().ToString();
+
+            //Remove the user
+            if (username.Equals(STR_WEBMASTER_USERNAME))
+            {
+                throw new Exception("The webmaster account cannot be removed");
+            }
+            this.Delete(this.FindById(userinfo.UserId));
+        }
     }//eoc
 }//eon
